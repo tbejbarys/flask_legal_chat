@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Помощник по юридическим вопросам</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="light-theme">
+    <div class="container py-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="m-0">Помощник по юридическим вопросам</h2>
+            <button id="theme-toggle" class="btn btn-outline-secondary btn-sm">🌙 Тёмная тема</button>
+        </div>
+
+        <div id="chat-box" class="border rounded p-3 mb-3 bg-body" style="height:400px; overflow-y:auto;"></div>
+
+        <div class="input-group">
+            <input type="text" id="user-input" class="form-control" placeholder="Введите вопрос...">
+            <button class="btn btn-primary" onclick="sendMessage()">Отправить</button>
+        </div>
+    </div>
+
+    <script>
+        function createMessageElement(content, type) {
+            let div = document.createElement("div");
+            div.className = type === "user" ? "text-end text-primary fw-bold mb-1 fade-in" : "text-start text-success fw-bold mb-1 fade-in";
+            div.innerHTML = type === "user"
+                ? `Вы: <span class="fw-normal">${content}</span>`
+                : `Бот: <span class="fw-normal">${content}</span>`;
+            return div;
+        }
+
+        async function sendMessage() {
+            let input = document.getElementById("user-input");
+            let message = input.value.trim();
+            if (!message) return;
+
+            let chatBox = document.getElementById("chat-box");
+            chatBox.appendChild(createMessageElement(message, "user"));
+            input.value = "";
+
+            // Индикатор ожидания
+            let typingIndicator = document.createElement("div");
+            typingIndicator.className = "text-start text-muted fw-normal mb-1 fade-in";
+            typingIndicator.id = "typing";
+            typingIndicator.innerHTML = `<i>Бот печатает<span class="dots"></span></i>`;
+            chatBox.appendChild(typingIndicator);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            let response = await fetch("/ask", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({message: message})
+            });
+
+            let data = await response.json();
+
+            // Удаляем индикатор
+            typingIndicator.remove();
+
+            // Показ ответа
+            if (data.answer) {
+                chatBox.appendChild(createMessageElement(data.answer, "bot"));
+            } else {
+                chatBox.appendChild(createMessageElement(`Ошибка: ${data.error}`, "bot"));
+            }
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // Отправка по Enter
+        document.getElementById("user-input").addEventListener("keypress", function (e) {
+            if (e.key === "Enter") sendMessage();
+        });
+
+        // Переключение темы
+        document.getElementById("theme-toggle").addEventListener("click", function () {
+            document.body.classList.toggle("dark-theme");
+            document.body.classList.toggle("light-theme");
+            this.textContent = document.body.classList.contains("dark-theme") ? "☀ Светлая тема" : "🌙 Тёмная тема";
+        });
+    </script>
+</body>
+</html>
