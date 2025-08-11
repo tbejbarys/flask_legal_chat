@@ -28,6 +28,7 @@
 ```bash
 git clone https://github.com/username/flask-legal-chat.git
 cd flask-legal-chat
+```
 
 ### 2. Создать виртуальное окружение
 
